@@ -24,6 +24,8 @@
     <true/>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>NSHumanReadableCopyright</key>
     <string>HiDPI Scaler - Virtual Display HiDPI Scaling</string>
 </dict>

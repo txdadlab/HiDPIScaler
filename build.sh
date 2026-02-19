@@ -36,6 +36,9 @@ cp "$BINARY" "${BUNDLE_DIR}/Contents/MacOS/${EXECUTABLE}"
 # Copy Info.plist
 cp "Resources/Info.plist" "${BUNDLE_DIR}/Contents/"
 
+# Copy app icon
+cp "Resources/AppIcon.icns" "${BUNDLE_DIR}/Contents/Resources/"
+
 # Create PkgInfo
 echo -n "APPL????" > "${BUNDLE_DIR}/Contents/PkgInfo"
 

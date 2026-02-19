@@ -24,6 +24,11 @@ struct MenuBarView: View {
 
             Divider()
 
+            // Settings
+            settingsSection
+
+            Divider()
+
             // Footer
             footerSection
         }
@@ -217,6 +222,23 @@ struct MenuBarView: View {
 
             Spacer()
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - Settings
+
+    private var settingsSection: some View {
+        VStack(spacing: 8) {
+            Toggle("Launch at Login", isOn: $state.launchAtLogin)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+
+            Toggle("Auto-connect on Launch", isOn: $state.autoActivate)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+        .font(.caption)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
     }

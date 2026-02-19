@@ -3,6 +3,7 @@ import CoreGraphics
 import AppKit
 import CGVirtualDisplayBridge
 import Combine
+import ServiceManagement
 
 /// Resolution preset for quick selection
 struct ResolutionPreset: Identifiable, Hashable {
@@ -15,6 +16,16 @@ struct ResolutionPreset: Identifiable, Hashable {
 /// Central state manager for the HiDPI Scaler app
 final class HiDPIState: ObservableObject {
 
+    // MARK: - Persistence Keys
+
+    private enum DefaultsKey {
+        static let selectedDisplayID = "selectedDisplayID"
+        static let targetWidth = "targetWidth"
+        static let targetHeight = "targetHeight"
+        static let launchAtLogin = "launchAtLogin"
+        static let autoActivate = "autoActivate"
+    }
+
     // MARK: - Display list
     @Published var displays: [DisplayInfo] = []
     @Published var selectedDisplayID: CGDirectDisplayID? = nil
@@ -23,12 +34,18 @@ final class HiDPIState: ObservableObject {
     @Published var targetWidth: String = "1920"
     @Published var targetHeight: String = "1080"
 
+    // MARK: - Settings
+    @Published var launchAtLogin: Bool = false
+    @Published var autoActivate: Bool = false
+
     // MARK: - Active state
     @Published var isActive: Bool = false
     @Published var virtualDisplayID: CGDirectDisplayID? = nil
     @Published var activeTargetDisplayID: CGDirectDisplayID? = nil
     @Published var statusMessage: String = "Ready"
     @Published var isError: Bool = false
+
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Presets (computed from selected display's aspect ratio)
 
@@ -120,7 +137,50 @@ final class HiDPIState: ObservableObject {
     // MARK: - Init
 
     init() {
+        // Load saved settings before refreshing displays
+        let defaults = UserDefaults.standard
+        let savedWidth = defaults.string(forKey: DefaultsKey.targetWidth)
+        let savedHeight = defaults.string(forKey: DefaultsKey.targetHeight)
+        if let savedWidth, let savedHeight {
+            targetWidth = savedWidth
+            targetHeight = savedHeight
+        }
+
+        autoActivate = defaults.bool(forKey: DefaultsKey.autoActivate)
+
+        // Sync launch-at-login with system state (system is source of truth)
+        launchAtLogin = SMAppService.mainApp.status == .enabled
+
         refreshDisplays()
+
+        // Restore saved display selection (if still connected)
+        let savedDisplayID = defaults.integer(forKey: DefaultsKey.selectedDisplayID)
+        if savedDisplayID != 0,
+           displays.contains(where: { $0.displayID == savedDisplayID }) {
+            selectedDisplayID = CGDirectDisplayID(savedDisplayID)
+        }
+
+        // Auto-save settings on change
+        $selectedDisplayID.dropFirst().sink { id in
+            guard let id else { return }
+            defaults.set(Int(id), forKey: DefaultsKey.selectedDisplayID)
+        }.store(in: &cancellables)
+
+        $targetWidth.dropFirst().sink { value in
+            defaults.set(value, forKey: DefaultsKey.targetWidth)
+        }.store(in: &cancellables)
+
+        $targetHeight.dropFirst().sink { value in
+            defaults.set(value, forKey: DefaultsKey.targetHeight)
+        }.store(in: &cancellables)
+
+        $launchAtLogin.dropFirst().sink { [weak self] value in
+            self?.updateLaunchAtLogin(value)
+        }.store(in: &cancellables)
+
+        $autoActivate.dropFirst().sink { value in
+            defaults.set(value, forKey: DefaultsKey.autoActivate)
+        }.store(in: &cancellables)
 
         // Register for app termination to clean up
         NotificationCenter.default.addObserver(
@@ -129,10 +189,45 @@ final class HiDPIState: ObservableObject {
         ) { [weak self] _ in
             self?.deactivate()
         }
+
+        // Auto-activate on launch if enabled
+        if autoActivate, selectedDisplayID != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                guard let self, !self.isActive else { return }
+                // Re-verify display is still connected
+                self.refreshDisplays()
+                guard let displayID = self.selectedDisplayID,
+                      self.displays.contains(where: { $0.displayID == displayID }) else {
+                    self.setStatus("Auto-connect skipped: saved display not found", error: true)
+                    return
+                }
+                self.activate()
+            }
+        }
     }
 
     deinit {
         deactivate()
+    }
+
+    // MARK: - Launch at Login
+
+    private func updateLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            UserDefaults.standard.set(enabled, forKey: DefaultsKey.launchAtLogin)
+        } catch {
+            Logger.error("Failed to \(enabled ? "enable" : "disable") launch at login: \(error)")
+            // Revert the toggle on failure
+            DispatchQueue.main.async { [weak self] in
+                self?.launchAtLogin = !enabled
+            }
+            setStatus("Launch at login failed: \(error.localizedDescription)", error: true)
+        }
     }
 
     // MARK: - Display Refresh
