@@ -20,12 +20,21 @@ jobs:
           chmod +x build.sh
           ./build.sh
 
-      - name: Zip app bundle
+      - name: Create DMG
         run: |
-          ditto -c -k --sequesterRsrc --keepParent "HiDPI Scaler.app" "HiDPI-Scaler-${{ github.ref_name }}.zip"
+          DMG_NAME="HiDPI-Scaler-${{ github.ref_name }}.dmg"
+          # Create a temporary directory for DMG contents
+          mkdir -p dmg-staging
+          cp -r "HiDPI Scaler.app" dmg-staging/
+          ln -s /Applications dmg-staging/Applications
+          # Create DMG with drag-and-drop layout
+          hdiutil create -volname "HiDPI Scaler" \
+            -srcfolder dmg-staging \
+            -ov -format UDZO \
+            "$DMG_NAME"
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          files: "HiDPI-Scaler-${{ github.ref_name }}.zip"
+          files: "HiDPI-Scaler-${{ github.ref_name }}.dmg"
           generate_release_notes: true
