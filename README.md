@@ -35,19 +35,6 @@ git clone https://github.com/txdadlab/HiDPIScaler.git
 cd HiDPIScaler
 chmod +x build.sh
 ./build.sh
-```
-
-This creates `HiDPI Scaler.app` in the project directory.
-
-### Run
-
-```bash
-open "HiDPI Scaler.app"
-```
-
-Or copy to Applications:
-
-```bash
 cp -r "HiDPI Scaler.app" /Applications/
 ```
 
