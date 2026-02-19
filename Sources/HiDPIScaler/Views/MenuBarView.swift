@@ -230,13 +230,23 @@ struct MenuBarView: View {
 
     private var settingsSection: some View {
         VStack(spacing: 8) {
-            Toggle("Launch at Login", isOn: $state.launchAtLogin)
-                .toggleStyle(.switch)
-                .controlSize(.small)
+            HStack {
+                Text("Launch at Login")
+                Spacer()
+                Toggle("", isOn: $state.launchAtLogin)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .controlSize(.small)
+            }
 
-            Toggle("Auto-connect on Launch", isOn: $state.autoActivate)
-                .toggleStyle(.switch)
-                .controlSize(.small)
+            HStack {
+                Text("Auto-connect on Launch")
+                Spacer()
+                Toggle("", isOn: $state.autoActivate)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .controlSize(.small)
+            }
         }
         .font(.caption)
         .padding(.horizontal, 16)
