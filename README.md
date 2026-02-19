@@ -11,6 +11,9 @@ Many external monitors — especially ultrawides and budget 4K panels — don't 
 - Generates resolution presets matched to your display's aspect ratio
 - One-click enable/disable
 - Supports all aspect ratios: 16:9, 21:9, 32:9, 16:10, 3:2, and more
+- Launch at Login via macOS Login Items
+- Auto-connect on Launch — automatically re-activates your last configuration
+- Settings persistence — display selection and resolution saved across sessions
 - Clean teardown on quit — no orphaned virtual displays
 
 ## Requirements
@@ -20,6 +23,10 @@ Many external monitors — especially ultrawides and budget 4K panels — don't 
 - Swift 5.9+ toolchain (for building from source)
 
 ## Installation
+
+### Download
+
+Grab the latest `.dmg` from [Releases](https://github.com/txdadlab/HiDPIScaler/releases), open it, and drag **HiDPI Scaler** into your Applications folder.
 
 ### Build from source
 
@@ -70,7 +77,9 @@ This is the same technique used by tools like BetterDisplay, implemented as a fo
 HiDPIScaler/
 ├── Package.swift                          # SPM package definition
 ├── build.sh                               # Build + bundle script
+├── HiDPIScaler.png                        # Source icon (1024x1024)
 ├── Resources/
+│   ├── AppIcon.icns                      # App icon bundle
 │   └── Info.plist                         # App bundle metadata
 └── Sources/
     ├── CGVirtualDisplayBridge/            # Obj-C bridge to private CG APIs
