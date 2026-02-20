@@ -20,15 +20,15 @@ Many external monitors — especially ultrawides and budget 4K panels — don't 
 
 - macOS 13.0 (Ventura) or later
 - Apple Silicon or Intel Mac
-- Swift 5.9+ toolchain (for building from source)
 
 ## Installation
 
-### Download
+Grab the latest `.dmg` from [Releases](https://github.com/txdadlab/HiDPIScaler/releases), open it, and drag **HiDPI Scaler** into your Applications folder. No build step required.
 
-Grab the latest `.dmg` from [Releases](https://github.com/txdadlab/HiDPIScaler/releases), open it, and drag **HiDPI Scaler** into your Applications folder.
+<details>
+<summary>Build from source (optional)</summary>
 
-### Build from source
+Requires Swift 5.9+ toolchain.
 
 ```bash
 git clone https://github.com/txdadlab/HiDPIScaler.git
@@ -37,6 +37,7 @@ chmod +x build.sh
 ./build.sh
 cp -r "HiDPI Scaler.app" /Applications/
 ```
+</details>
 
 ## Usage
 
