@@ -256,21 +256,34 @@ struct MenuBarView: View {
     // MARK: - Footer
 
     private var footerSection: some View {
-        HStack {
-            Button("Refresh") {
-                state.refreshDisplays()
+        VStack(spacing: 6) {
+            if let update = state.updateAvailable {
+                Button {
+                    NSWorkspace.shared.open(update.url)
+                } label: {
+                    Label("Update: v\(update.version)", systemImage: "arrow.up.circle")
+                        .font(.caption)
+                        .foregroundColor(.accentColor)
+                }
+                .buttonStyle(.borderless)
             }
-            .buttonStyle(.borderless)
-            .font(.caption)
 
-            Spacer()
+            HStack {
+                Button("Refresh") {
+                    state.refreshDisplays()
+                }
+                .buttonStyle(.borderless)
+                .font(.caption)
 
-            Button("Quit") {
-                state.deactivate()
-                NSApplication.shared.terminate(nil)
+                Spacer()
+
+                Button("Quit") {
+                    state.deactivate()
+                    NSApplication.shared.terminate(nil)
+                }
+                .buttonStyle(.borderless)
+                .font(.caption)
             }
-            .buttonStyle(.borderless)
-            .font(.caption)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

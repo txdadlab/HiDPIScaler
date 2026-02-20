@@ -45,6 +45,9 @@ final class HiDPIState: ObservableObject {
     @Published var statusMessage: String = "Ready"
     @Published var isError: Bool = false
 
+    // MARK: - Update check
+    @Published var updateAvailable: (version: String, url: URL)? = nil
+
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Presets (computed from selected display's aspect ratio)
@@ -189,6 +192,8 @@ final class HiDPIState: ObservableObject {
         ) { [weak self] _ in
             self?.deactivate()
         }
+
+        checkForUpdates()
 
         // Auto-activate on launch if enabled
         if autoActivate, selectedDisplayID != nil {
@@ -359,5 +364,47 @@ final class HiDPIState: ObservableObject {
             self.statusMessage = message
             self.isError = error
         }
+    }
+
+    // MARK: - Update Check
+
+    private func checkForUpdates() {
+        guard let url = URL(string: "https://api.github.com/repos/txdadlab/HiDPIScaler/releases/latest") else { return }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            guard error == nil,
+                  let data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let tagName = json["tag_name"] as? String,
+                  let htmlURL = json["html_url"] as? String,
+                  let releaseURL = URL(string: htmlURL) else { return }
+
+            let remoteVersion = tagName.hasPrefix("v") ? String(tagName.dropFirst()) : tagName
+
+            guard let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String else { return }
+
+            if Self.isVersion(remoteVersion, newerThan: currentVersion) {
+                DispatchQueue.main.async {
+                    self?.updateAvailable = (version: remoteVersion, url: releaseURL)
+                }
+            }
+        }.resume()
+    }
+
+    /// Compare two semantic version strings (major.minor.patch).
+    /// Returns `true` when `a` is strictly newer than `b`.
+    static func isVersion(_ a: String, newerThan b: String) -> Bool {
+        let partsA = a.split(separator: ".").compactMap { Int($0) }
+        let partsB = b.split(separator: ".").compactMap { Int($0) }
+        for i in 0..<max(partsA.count, partsB.count) {
+            let va = i < partsA.count ? partsA[i] : 0
+            let vb = i < partsB.count ? partsB[i] : 0
+            if va > vb { return true }
+            if va < vb { return false }
+        }
+        return false
     }
 }

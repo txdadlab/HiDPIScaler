@@ -15,3 +15,6 @@ DerivedData/
 # macOS
 .DS_Store
 ._*
+
+# Claude
+CLAUDE.md
