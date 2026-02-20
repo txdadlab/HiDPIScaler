@@ -43,15 +43,24 @@ CGDirectDisplayID HiDPICreateVirtualDisplay(
 
         CGVirtualDisplay *virtualDisplay = [[CGVirtualDisplay alloc]
             initWithDescriptor:descriptor];
+        [descriptor release];
         if (!virtualDisplay) { NSLog(@"[HiDPI] initWithDescriptor returned nil"); return 0; }
 
         CGDirectDisplayID displayID = [virtualDisplay displayID];
-        if (displayID == 0) { NSLog(@"[HiDPI] Invalid display ID (0)"); return 0; }
+        if (displayID == 0) {
+            NSLog(@"[HiDPI] Invalid display ID (0)");
+            [virtualDisplay release];
+            return 0;
+        }
 
         NSLog(@"[HiDPI] Virtual display created: ID=%u", displayID);
 
         CGVirtualDisplaySettings *settings = [[CGVirtualDisplaySettings alloc] init];
-        if (!settings) { NSLog(@"[HiDPI] Failed to alloc settings"); return 0; }
+        if (!settings) {
+            NSLog(@"[HiDPI] Failed to alloc settings");
+            [virtualDisplay release];
+            return 0;
+        }
 
         settings.hiDPI = 1;
 
@@ -65,12 +74,18 @@ CGDirectDisplayID HiDPICreateVirtualDisplay(
         if (hidpiMode)  [modes addObject:hidpiMode];
         settings.modes = modes;
 
+        [nativeMode release];
+        [hidpiMode release];
+
         BOOL applied = [virtualDisplay applySettings:settings];
         NSLog(@"[HiDPI] applySettings: %@", applied ? @"YES" : @"NO");
+        [settings release];
 
         @synchronized (sActiveVirtualDisplays) {
             sActiveVirtualDisplays[@(displayID)] = virtualDisplay;
         }
+        // Dictionary retains; balance our alloc
+        [virtualDisplay release];
 
         NSLog(@"[HiDPI] Ready: ID=%u, logical=%ux%u, backing=%ux%u",
               displayID, logicalWidth, logicalHeight, pixelWidth, pixelHeight);
