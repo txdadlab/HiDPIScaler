@@ -131,7 +131,7 @@ struct MenuBarView: View {
             if let display = state.selectedDisplay {
                 HStack(spacing: 12) {
                     InfoBadge(label: "Native",
-                              value: "\(display.pixelWidth)x\(display.pixelHeight)")
+                              value: "\(display.logicalWidth)x\(display.logicalHeight)")
                     InfoBadge(label: "Ratio",
                               value: state.aspectRatioLabel)
                     InfoBadge(label: "Scale",

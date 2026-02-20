@@ -56,8 +56,8 @@ final class HiDPIState: ObservableObject {
     /// The native aspect ratio of the selected display as a simplified fraction
     var nativeAspectRatio: (w: Int, h: Int) {
         guard let display = selectedDisplay else { return (16, 9) }
-        let w = display.pixelWidth
-        let h = display.pixelHeight
+        let w = display.logicalWidth
+        let h = display.logicalHeight
         let g = gcd(w, h)
         return (w / g, h / g)
     }
@@ -82,8 +82,8 @@ final class HiDPIState: ObservableObject {
     var presets: [ResolutionPreset] {
         guard let display = selectedDisplay else { return [] }
 
-        let nativeW = display.pixelWidth
-        let nativeH = display.pixelHeight
+        let nativeW = display.logicalWidth
+        let nativeH = display.logicalHeight
         let g = gcd(nativeW, nativeH)
         let ratioW = nativeW / g
         let ratioH = nativeH / g
@@ -233,7 +233,14 @@ final class HiDPIState: ObservableObject {
     // MARK: - Display Refresh
 
     func refreshDisplays() {
-        displays = DisplayManager.getActiveDisplays()
+        var allDisplays = DisplayManager.getActiveDisplays()
+
+        // Filter out any virtual display we created
+        if let vdID = virtualDisplayID {
+            allDisplays.removeAll { $0.displayID == vdID }
+        }
+
+        displays = allDisplays
 
         // Auto-select main display if nothing selected
         if selectedDisplayID == nil || !displays.contains(where: { $0.displayID == selectedDisplayID }) {
@@ -320,6 +327,8 @@ final class HiDPIState: ObservableObject {
     func deactivate() {
         guard isActive, let vdID = virtualDisplayID else { return }
 
+        let physicalDisplayID = activeTargetDisplayID
+
         if let targetID = activeTargetDisplayID {
             try? MirroringManager.disableMirroring(sourceDisplay: targetID)
         }
@@ -331,9 +340,15 @@ final class HiDPIState: ObservableObject {
         isActive = false
         setStatus("Ready")
 
-        // Refresh display list after deactivation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.refreshDisplays()
+        // Give macOS time to fully deregister the virtual display, then refresh
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self else { return }
+            self.refreshDisplays()
+            // Re-select the physical display we were targeting
+            if let physicalDisplayID,
+               self.displays.contains(where: { $0.displayID == physicalDisplayID }) {
+                self.selectedDisplayID = physicalDisplayID
+            }
         }
     }
 
